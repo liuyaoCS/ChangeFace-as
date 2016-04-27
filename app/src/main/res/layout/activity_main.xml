@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="2dp" >
+    <TextView android:id="@+id/result"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="FaceCount:"
+        android:visibility="gone"
+        />
+    <Button android:id="@+id/get"
+         android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Get Image"/>
+    <Button android:id="@+id/detect"
+         android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Change"/>
+    <LinearLayout android:layout_width="match_parent"
+        android:layout_height="wrap_content" 
+        android:orientation="horizontal"
+        android:weightSum="2"
+        android:padding="1dp"
+        android:background="#111111">
+        <ImageView android:id="@+id/imageView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:scaleType="fitCenter"
+        />
+         <ImageView android:id="@+id/imageView_dest"
+        android:layout_width="0dp"
+          android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:scaleType="fitCenter"
+        />
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent"
+        android:layout_height="wrap_content" 
+        android:orientation="horizontal"
+        android:weightSum="3"
+        android:padding="1dp"
+        android:background="#111111">
+        <ImageView android:id="@+id/imageViewTest1"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:scaleType="fitCenter"
+        />
+         <ImageView android:id="@+id/imageViewTest2"
+        android:layout_width="0dp"
+          android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:scaleType="fitCenter"
+        />
+         <ImageView android:id="@+id/imageViewTest3"
+        android:layout_width="0dp"
+          android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:scaleType="fitCenter"
+        />
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent"
+        android:layout_height="wrap_content" 
+        android:orientation="horizontal"
+        android:weightSum="3"
+        android:padding="1dp"
+        android:background="#111111">
+        <ImageView android:id="@+id/imageViewTest4"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:scaleType="fitCenter"
+        />
+         <ImageView android:id="@+id/imageViewTest5"
+        android:layout_width="0dp"
+          android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:scaleType="fitCenter"
+        />
+         <ImageView android:id="@+id/imageViewTest6"
+        android:layout_width="0dp"
+          android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:scaleType="fitCenter"
+        />
+    </LinearLayout>
+    
+
+</LinearLayout>
