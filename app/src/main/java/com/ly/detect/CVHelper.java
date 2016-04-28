@@ -9,6 +9,7 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -18,13 +19,11 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
 
-import android.R.integer;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.util.Log;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 public class CVHelper {
 	
@@ -41,7 +40,7 @@ public class CVHelper {
 	private static final Scalar FACE_RECT_COLOR = new Scalar(0, 0, 0, 255);
 	private static final Scalar EYE_RECT_COLOR = new Scalar(255, 0, 0, 255);
 	private static final Scalar NOSE_RECT_COLOR = new Scalar(0, 255, 0, 255);
-	private static final Scalar MOUSE_RECT_COLOR = new Scalar(0, 0,255, 255);
+	private static final Scalar MOUTH_RECT_COLOR = new Scalar(0, 0,255, 255);
 	
 	private static CascadeClassifier faceDetector;
 	private static CascadeClassifier lefteyeDetector;
@@ -76,6 +75,18 @@ public class CVHelper {
     		    
     	return ret;	
     }
+	public static Mat getMask2(Mat im, int type, MatOfPoint matOfPoint){
+		Mat ret=Mat.zeros(im.rows(), im.cols(), type);
+		Core.fillConvexPoly(ret, matOfPoint, WHITE_COLOR);
+//		Core.rectangle(ret, eyeRect.tl(), eyeRect.br(), WHITE_COLOR,CV_FILLED);//CV_FILLED
+//		Core.rectangle(ret, noseRect.tl(), noseRect.br(), WHITE_COLOR,CV_FILLED);//CV_FILLED
+//		Core.rectangle(ret, mouseRect.tl(), mouseRect.br(), WHITE_COLOR,CV_FILLED);//CV_FILLED
+
+		Imgproc.GaussianBlur(ret, ret, new Size(MASK_BLUR_SIZE,MASK_BLUR_SIZE),0);
+		ret.convertTo(ret, type, 1/255.0);
+
+		return ret;
+	}
     public static void drawMat(Mat mat,ImageView view){
         
     	Mat show=new Mat();
@@ -129,7 +140,7 @@ public class CVHelper {
 		}
 		
    }
-    public static Rect[] eyeTestDetect(Mat imgMat,boolean isShowLine){
+    public static Rect[] testDetect(Mat imgMat, boolean isShowLine){
     	
     	Rect[] ret=new Rect[4];
     	
@@ -141,53 +152,62 @@ public class CVHelper {
         Rect[] results=faceDetections.toArray();
         //face
         ret[0]=results[0];
-        
-        //left eye
-        Mat faceMat=imgMat.submat(ret[0]);
-        MatOfRect lefteyeDetections = new MatOfRect();  
-        lefteyeDetector.detectMultiScale(faceMat, lefteyeDetections, 1.1, 5,
-				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
-				new Size(),new Size());  
-        Rect[] lefteyeresults=lefteyeDetections.toArray();
-        ret[1]=lefteyeresults[0];
-      //right eye
-        MatOfRect righteyeDetections = new MatOfRect();  
-        righteyeDetector.detectMultiScale(faceMat, righteyeDetections, 1.1, 5,
-				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
-				new Size(),new Size());  
-        Rect[] righteyeresults=righteyeDetections.toArray();
-        ret[2]=righteyeresults[0];
+		Mat faceMat=imgMat.submat(ret[0]);
+
+		//mouth
+		MatOfRect mouthDetections = new MatOfRect();
+
+		Rect roi=new Rect(0,
+				(int)(results[0].height/2),
+				results[0].width,
+				(int) (results[0].height/2));
+//		Rect roi=new Rect(results[0].width / 4,
+//				(int)(results[0].height/2+results[0].height/5),
+//				results[0].width/2,
+//				(int) (results[0].height*2 /9));
+		Mat roiMat=faceMat.submat(roi);
+		mouthDetector.detectMultiScale(roiMat, mouthDetections, 1.1, 2,
+				Objdetect.CASCADE_SCALE_IMAGE, // 2
+				new Size(),new Size());
+		Rect[] mouthresults=mouthDetections.toArray();
+		ret[3]=mouthresults[0];
            
         if(isShowLine){
         	Core.rectangle(imgMat,new Point(ret[0].x, ret[0].y),
         			new Point(ret[0].x + ret[0].width, ret[0].y + ret[0].height),FACE_RECT_COLOR,0);
         	
-        	Core.rectangle(imgMat.submat(ret[0]), ret[1].tl(), ret[1].br(),
-        			EYE_RECT_COLOR, 0);
-        	Core.rectangle(imgMat.submat(ret[0]), ret[2].tl(), ret[2].br(),
-        			EYE_RECT_COLOR, 0);
+//        	Core.rectangle(imgMat.submat(ret[0]), ret[1].tl(), ret[1].br(),
+//        			EYE_RECT_COLOR, 0);
+//        	Core.rectangle(imgMat.submat(ret[0]), ret[2].tl(), ret[2].br(),
+//        			EYE_RECT_COLOR, 0);
+			Core.rectangle(roiMat, ret[3].tl(), ret[3].br(),
+					MOUTH_RECT_COLOR, 0);
         }
         		
         return ret;
     }
-   public static double getAngle(Mat imgMat){
-	   Rect[] ret=new Rect[3];
+   public static double getAngle(Mat imgMat,boolean isShowLine){
+	   Rect[] ret=new Rect[6];
    	
        MatOfRect faceDetections = new MatOfRect();  
-       faceDetector.detectMultiScale(imgMat, faceDetections, 1.1, 5,
-				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
+       faceDetector.detectMultiScale(imgMat, faceDetections, 1.1, 2,
+				Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
 				new Size(),new Size());  
        
        Rect[] results=faceDetections.toArray();
        //face
        ret[0]=results[0];      
        Mat faceMat=imgMat.submat(ret[0]);
-       
-     //left eye   
-       MatOfRect lefteyeDetections = new MatOfRect();  
-       lefteyeDetector.detectMultiScale(faceMat, lefteyeDetections, 1.1, 5,
-				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
-				new Size(),new Size());  
+     //left eye
+	   Rect lroi=new Rect(0,
+			   (int)(0),
+			   results[0].width/2,
+			   (int) (results[0].height/2));
+	   Mat lroiMat=faceMat.submat(lroi);
+	   MatOfRect lefteyeDetections = new MatOfRect();
+       lefteyeDetector.detectMultiScale(lroiMat, lefteyeDetections, 1.1, 2,
+				Objdetect.CASCADE_SCALE_IMAGE, // 2
+				new Size(),new Size());
        Rect[] lefteyeresults=lefteyeDetections.toArray();
        if(lefteyeresults.length==0){
     	   Log.e("ly", "no  left eye  detected,rotate 0");
@@ -195,22 +215,62 @@ public class CVHelper {
        }
        ret[1]=lefteyeresults[0];
      //right eye
-       MatOfRect righteyeDetections = new MatOfRect();  
-       righteyeDetector.detectMultiScale(faceMat, righteyeDetections, 1.1, 5,
-				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
-				new Size(),new Size());  
+	   Rect rroi=new Rect(results[0].width/2,
+			   (int)(0),
+			   results[0].width/2,
+			   (int) (results[0].height/2));
+	   Mat rroiMat=faceMat.submat(rroi);
+       MatOfRect righteyeDetections = new MatOfRect();
+       righteyeDetector.detectMultiScale(rroiMat, righteyeDetections, 1.1, 2,
+				Objdetect.CASCADE_SCALE_IMAGE, // 2
+				new Size(),new Size());
        Rect[] righteyeresults=righteyeDetections.toArray();
        if(righteyeresults.length==0){
     	   Log.e("ly", "no  right eye  detected,rotate 0");
     	   return 0.0;
        }
        ret[2]=righteyeresults[0];
-       
-       Point c1=new Point(ret[1].x+ret[1].width/2,ret[1].y+ret[1].height/2);
-       Point c2=new Point(ret[2].x+ret[2].width/2,ret[2].y+ret[2].height/2);
-       
-       
-       double angle=Math.atan((double)(c2.y-c1.y)/(c2.x-c1.x))*(-180/Math.PI);//180/Math.PI;
+
+//	   //eye
+//	   MatOfRect eyepairDetections = new MatOfRect();
+//	   eyepairDetector.detectMultiScale(faceMat, eyepairDetections, 1.1, 2,
+//			   Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
+//			   new Size(),new Size());
+//	   Rect[] eyepairresults=eyepairDetections.toArray();
+//	   ret[3]=eyepairresults[0];
+//
+//	   //nose
+//	   MatOfRect noseDetections = new MatOfRect();
+//	   noseDetector.detectMultiScale(faceMat, noseDetections, 1.1, 2,
+//			   Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
+//			   new Size(),new Size());
+//	   Rect[] noseresults=noseDetections.toArray();
+//	   ret[4]=noseresults[0];
+//	   //mouth
+//	   MatOfRect mouthDetections = new MatOfRect();
+//	   mouthDetector.detectMultiScale(faceMat, mouthDetections, 1.1, 2,
+//			   Objdetect.CASCADE_SCALE_IMAGE, // 2
+//			   new Size(),new Size());
+//	   Rect[] mouthresults=mouthDetections.toArray();
+//	   ret[5]=mouthresults[0];
+
+	   if(isShowLine){
+
+        	Core.rectangle(lroiMat, ret[1].tl(), ret[1].br(),
+        			EYE_RECT_COLOR, 0);
+        	Core.rectangle(rroiMat, ret[2].tl(), ret[2].br(),
+        			EYE_RECT_COLOR, 0);
+//		   Core.rectangle(imgMat.submat(ret[0]), ret[3].tl(), ret[3].br(),
+//				   EYE_RECT_COLOR, 0);
+//		   Core.rectangle(imgMat.submat(ret[0]), ret[4].tl(), ret[4].br(),
+//				   NOSE_RECT_COLOR, 0);
+//		   Core.rectangle(imgMat.submat(ret[0]), ret[5].tl(), ret[5].br(),
+//				   MOUTH_RECT_COLOR, 0);
+	   }
+
+	   Point c1=new Point(ret[1].x+ret[1].width/2,ret[1].y+ret[1].height/2);
+	   Point c2=new Point(ret[2].x+ret[2].width/2,ret[2].y+ret[2].height/2);
+       double angle=Math.atan((double)(c2.y-c1.y)/(c2.x-c1.x))*(180/Math.PI);//180/Math.PI;
        Log.i("ly","angle->"+angle);
        return angle;
    }
@@ -252,7 +312,7 @@ public class CVHelper {
         	Core.rectangle(imgMat.submat(ret[0]), ret[2].tl(), ret[2].br(),
         			NOSE_RECT_COLOR, 0);
         	Core.rectangle(imgMat.submat(ret[0]), ret[3].tl(), ret[3].br(),
-        			MOUSE_RECT_COLOR, 0);
+					MOUTH_RECT_COLOR, 0);
         }
         		
         return ret;
@@ -328,91 +388,12 @@ public class CVHelper {
         	Core.rectangle(imgMat.submat(ret[0]), ret[2].tl(), ret[2].br(),
         			NOSE_RECT_COLOR, 0);
         	Core.rectangle(imgMat.submat(ret[0]), ret[3].tl(), ret[3].br(),
-        			MOUSE_RECT_COLOR, 0);
+					MOUTH_RECT_COLOR, 0);
         }
         		
         return ret;
     }
-public static Rect[] faceDetectFineGeek(Mat imgMat,boolean isShowLine){
-    	
-    	Rect[] ret=new Rect[4];
-    	
-        MatOfRect faceDetections = new MatOfRect();  
-        faceDetector.detectMultiScale(imgMat, faceDetections, 1.1, 5,
-				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
-				new Size(),new Size());  
-        
-        Rect[] results=faceDetections.toArray();
-        //face
-        ret[0]=results[0];
-        Mat faceMat=imgMat.submat(ret[0]);
-        //eye       
-        MatOfRect eyepairDetections = new MatOfRect();  
-        eyepairDetector.detectMultiScale(faceMat, eyepairDetections, 1.1, 5,
-				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
-				new Size(),new Size());  
-        Rect[] eyepairresults=eyepairDetections.toArray();
- 
-        if(eyepairresults.length!=0){
-        	//ret[1]=eyepairresults[0];
-        	ret[1]=new Rect(eyepairresults[0].x+eyepairresults[0].width/10,
-        			eyepairresults[0].y,eyepairresults[0].width*4/5,eyepairresults[0].height);
-        }else{
-        	ret[1]=new Rect(results[0].width / 7,
-    				(int) (results[0].height / 4.5),
-    				(results[0].width - 2 * results[0].width / 7) , 
-    				(int) (results[0].height / 3));
-        	Log.e("ly", "no  eye pair detected,using default");
-        }
-       
-        //nose
-        MatOfRect noseDetections = new MatOfRect();  
-        noseDetector.detectMultiScale(faceMat, noseDetections, 1.1, 5,
-				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
-				new Size(),new Size());  
-        Rect[] noseresults=noseDetections.toArray();
-        if(noseresults.length!=0){
-        	ret[2]=noseresults[0];
-        }else{
-        	ret[2]=new Rect(results[0].width/4,
-    				(int) (results[0].height / 2),
-    				results[0].width / 2,
-    				(int) (results[0].height / 3));
-        	Log.e("ly", "no  nose detected,using default");
-        }
-       
-		//mouse
-        MatOfRect mouthDetections = new MatOfRect();  
-        mouthDetector.detectMultiScale(faceMat, mouthDetections, 1.1, 5,
-				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
-				new Size(),new Size());  
-        Rect[] mouthresults=mouthDetections.toArray();
-        if(mouthresults.length!=0){
-        	//ret[3]=mouthresults[0];
-        	ret[3]=new Rect(mouthresults[0].x+mouthresults[0].width/10,
-        			mouthresults[0].y,mouthresults[0].width*4/5,mouthresults[0].height);
-        }else{
-        	ret[3]=new Rect(results[0].width/4,
-    				(int) (results[0].height / 2),
-    				results[0].width / 2,
-    				(int) (results[0].height / 3));
-        	Log.e("ly", "no  mouth detected,using default");
-        }
-        
-        if(isShowLine){
-        	Core.rectangle(imgMat,new Point(ret[0].x, ret[0].y),
-        			new Point(ret[0].x + ret[0].width, ret[0].y + ret[0].height),FACE_RECT_COLOR,0);
-        	
-        	Core.rectangle(imgMat.submat(ret[0]), ret[1].tl(), ret[1].br(),
-        			EYE_RECT_COLOR, 0);
-        	Core.rectangle(imgMat.submat(ret[0]), ret[2].tl(), ret[2].br(),
-        			NOSE_RECT_COLOR, 0);
-        	Core.rectangle(imgMat.submat(ret[0]), ret[3].tl(), ret[3].br(),
-        			MOUSE_RECT_COLOR, 0);
-        }
-        		
-        return ret;
-    }
+
     public static void generateDetectors(){
 
 		faceDetector=generateClassifier(R.raw.haarcascade_frontalface_alt,"haarcascade_frontalface_alt.xml");

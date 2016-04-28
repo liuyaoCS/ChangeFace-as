@@ -24,4 +24,6 @@ android {
 
 dependencies {
     compile files('libs/opencvlibrary-2.4.11.jar')
+    compile files('libs/faceppsdk.jar')
+
 }

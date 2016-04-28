@@ -1,10 +1,14 @@
 package com.ly.detect;
 
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -17,12 +21,18 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore.Images.ImageColumns;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
+
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class MainActivity extends Activity {  
 	  
@@ -38,13 +48,34 @@ public class MainActivity extends Activity {
 	private Mat test;
 	private Mat imgMatDest;
 	private Mat imgMat;
-    @Override  
+
+    private Handler handler;
+
+    private MatOfPoint matOfPoints;
+    private int srcHeight,srcWidth;
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {  
         super.onCreate(savedInstanceState);  
         setContentView(R.layout.activity_main);  
         
         initView();
         CVHelper.init(this);
+        matOfPoints= new MatOfPoint();
+        FaceppUtil.setDetectCallback(new MyDetectCallback());
+        handler=new Handler(new Handler.Callback() {
+            @Override
+            public boolean handleMessage(Message message) {
+                if(message.what==1){
+                    Bundle data=message.getData();
+                    double angle=data.getDouble("angle");
+                    imgMat=CVHelper.rotateMat(imgMat, angle);
+                    CVHelper.drawMat(imgMat, imageViewTest5);
+                    change();
+                }
+                return false;
+            }
+        });
       
     }  
     private void initView(){
@@ -65,8 +96,13 @@ public class MainActivity extends Activity {
         detect.setOnClickListener(new OnClickListener() {  
             public void onClick(View arg0) {              
             	prepare();
-            	//adjustAngle();
-            	change();   
+
+                //test();
+
+                faceppFetchAngleAndChange();
+
+                //adjustAngle();
+            	//change();
   
             }  
         });  
@@ -84,24 +120,32 @@ public class MainActivity extends Activity {
     }
     private void prepare(){
     	imgMat = new Mat();  
-        Utils.bitmapToMat(img, imgMat);  
+        Utils.bitmapToMat(img, imgMat);
+        srcWidth=imgMat.cols();
+        srcHeight=imgMat.rows();
         
         imgMatDest = new Mat();
         Utils.bitmapToMat(imgDest, imgMatDest);
     }
-    private void adjustAngle(){	
-        
-        Rect[] ret=CVHelper.eyeTestDetect(imgMat, true);
-    	Rect faceRect=ret[0];       
-        Mat faceMat =imgMat.submat(faceRect);   //showMatInfo(faceMat, "faceMat0");   
+    private void test(){
+        Rect[] ret=CVHelper.testDetect(imgMat, true);
+        Rect faceRect=ret[0];
+        Mat faceMat =imgMat.submat(faceRect);   //showMatInfo(faceMat, "faceMat0");
         CVHelper.drawMat(faceMat, imageViewTest4);
-    	            
-        double angledest=CVHelper.getAngle(imgMatDest);
-        double anglesrc=CVHelper.getAngle(imgMat);
+    }
+
+    private void adjustAngle(){	
+
+        double angleDest=CVHelper.getAngle(imgMatDest,false);
+        double angleSrc=CVHelper.getAngle(imgMat,false);
+        double angleTotal=angleDest-angleSrc;
         
-        Log.i("ly", "angledest->"+angledest+" anglesrc->"+anglesrc);
-        imgMat=CVHelper.rotateMat(imgMat, angledest-anglesrc);
+        Log.i("ly", "angleDest->"+angleDest+" angleSrc->"+angleSrc+" total->"+angleTotal);
+        imgMat=CVHelper.rotateMat(imgMat, angleTotal);
         CVHelper.drawMat(imgMat, imageViewTest5);       
+    }
+    private void faceppFetchAngleAndChange(){
+        FaceppUtil.detect(img);
     }
     private void change(){
 //    	imgMat = new Mat();  
@@ -115,7 +159,7 @@ public class MainActivity extends Activity {
      	
 //        imgMatDest = new Mat();
 //        Utils.bitmapToMat(imgDest, imgMatDest);
-        Rect[] retDest=CVHelper.faceDetectFine(imgMatDest,false);
+        Rect[] retDest=CVHelper.faceDetectFine(imgMatDest,true);
         Rect faceRectDest=retDest[0];
         Rect eyeRectDest = retDest[1];
         Rect noseRectDest = retDest[2];
@@ -125,7 +169,8 @@ public class MainActivity extends Activity {
         //get mask
         Mat faceMask=CVHelper.getMask(faceMat,CvType.CV_64FC4,eyeRect,noseRect,mouseRect); //showMatInfo(faceMat, "faceMat1");showMatInfo(faceMask, "faceMask");
         Mat faceMaskScaled=CVHelper.scaledMat(faceMask, faceRectDest, CvType.CV_64FC4);
-        Mat faceMaskDest=CVHelper.getMask(faceMatDest,CvType.CV_64FC4,eyeRectDest,noseRectDest,mouseRectDest);      
+        Mat faceMaskDest=CVHelper.getMask(faceMatDest,CvType.CV_64FC4,eyeRectDest,noseRectDest,mouseRectDest);
+
         Core.max(faceMaskScaled, faceMaskDest, faceMaskScaled);
              
         
@@ -220,11 +265,44 @@ public class MainActivity extends Activity {
                 Log.d(TAG, "idButSelPic Photopicker canceled");  
             }  
         }  
-    } 
-    static{
-		
-		System.loadLibrary("detect");
-		System.loadLibrary("dlib_shared");
-	}
-    private native int getLandmarks(long matAddr);
+    }
+    interface DetectCallback {
+        void angleResult(double angle);
+        void keyPointsResult(List<JSONObject> keyPoints);
+    }
+
+    class MyDetectCallback implements DetectCallback {
+        public void angleResult(double angle) {
+            Log.i(TAG,"angle->"+angle);
+            Message message=new Message();
+            message.what=1;
+            Bundle data=new Bundle();
+            data.putDouble("angle",angle);
+            message.setData(data);
+            handler.sendMessage(message);
+        }
+
+        @Override
+        public void keyPointsResult(List<JSONObject> keyPoints) {
+
+            List<Point> points=new ArrayList<Point>();
+            for (JSONObject item:keyPoints){
+                try {
+
+                    Point p=new Point(item.getDouble("x")*srcWidth/100,item.getDouble("y")*srcHeight/100);
+                    points.add(p);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            matOfPoints.fromList(points);
+        }
+    }
+//    static{
+//
+//		System.loadLibrary("detect");
+//		System.loadLibrary("dlib_shared");
+//	}
+    //private native int getLandmarks(long matAddr);
 }  
