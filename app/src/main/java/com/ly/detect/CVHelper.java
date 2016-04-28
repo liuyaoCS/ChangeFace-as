@@ -333,7 +333,7 @@ public class CVHelper {
         //eye       
         MatOfRect eyepairDetections = new MatOfRect();  
         eyepairDetector.detectMultiScale(faceMat, eyepairDetections, 1.1, 5,
-				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
+				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_SCALE_IMAGE, // 2
 				new Size(),new Size());  
         Rect[] eyepairresults=eyepairDetections.toArray();
  
@@ -350,7 +350,7 @@ public class CVHelper {
         //nose
         MatOfRect noseDetections = new MatOfRect();  
         noseDetector.detectMultiScale(faceMat, noseDetections, 1.1, 5,
-				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
+				Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
 				new Size(),new Size());  
         Rect[] noseresults=noseDetections.toArray();
         if(noseresults.length!=0){
@@ -364,8 +364,13 @@ public class CVHelper {
         }
        
 		//mouse
-        MatOfRect mouthDetections = new MatOfRect();  
-        mouthDetector.detectMultiScale(faceMat, mouthDetections, 1.1, 5,
+		Rect mouthroi=new Rect(0,
+				(int)(results[0].height/2),
+				results[0].width,
+				(int) (results[0].height/2));
+		Mat mouthroiMat=faceMat.submat(mouthroi);
+        MatOfRect mouthDetections = new MatOfRect();
+        mouthDetector.detectMultiScale(mouthroiMat, mouthDetections, 1.1, 5,
 				Objdetect.CASCADE_FIND_BIGGEST_OBJECT|Objdetect.CASCADE_DO_CANNY_PRUNING|Objdetect.CASCADE_SCALE_IMAGE, // 2
 				new Size(),new Size());  
         Rect[] mouthresults=mouthDetections.toArray();
@@ -378,6 +383,9 @@ public class CVHelper {
     				(int) (results[0].height / 3));
         	Log.e("ly", "no  mouth detected,using default");
         }
+		ret[3]=new Rect(ret[3].x,ret[3].y+ret[0].height/2,ret[3].width,ret[3].height);
+
+
         
         if(isShowLine){
         	Core.rectangle(imgMat,new Point(ret[0].x, ret[0].y),

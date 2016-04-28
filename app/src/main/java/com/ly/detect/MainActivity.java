@@ -152,18 +152,18 @@ public class MainActivity extends Activity {
 //        Utils.bitmapToMat(img, imgMat);         // test=imgMat; Log.i("ly", "rows="+getLandmarks(test.getNativeObjAddr()));
         Rect[] ret=CVHelper.faceDetectFine(imgMat,false);
     	Rect faceRect=ret[0];
-        Rect eyeRect = ret[1];   
-        Rect noseRect = ret[2];   
-        Rect mouseRect = ret[3];   
-        Mat faceMat =imgMat.submat(faceRect);   //showMatInfo(faceMat, "faceMat0");        
-     	
+        Rect eyeRect = ret[1];
+        Rect noseRect = ret[2];
+        Rect mouseRect = ret[3];
+        Mat faceMat =imgMat.submat(faceRect);   //showMatInfo(faceMat, "faceMat0");
+
 //        imgMatDest = new Mat();
 //        Utils.bitmapToMat(imgDest, imgMatDest);
-        Rect[] retDest=CVHelper.faceDetectFine(imgMatDest,true);
+        Rect[] retDest=CVHelper.faceDetectFine(imgMatDest,false);
         Rect faceRectDest=retDest[0];
         Rect eyeRectDest = retDest[1];
         Rect noseRectDest = retDest[2];
-        Rect mouseRectDest = retDest[3];   
+        Rect mouseRectDest = retDest[3];
         Mat faceMatDest=imgMatDest.submat(faceRectDest);
         
         //get mask
@@ -209,15 +209,19 @@ public class MainActivity extends Activity {
         onesMat.setTo(new Scalar(1.0, 1.0, 1.0, 1.0));
         Mat antiCombinedMask=new Mat(combinedMask.rows(), combinedMask.cols(), combinedMask.type());
         Core.subtract(onesMat, combinedMask, antiCombinedMask);	  //showData(antiCombinedMask, "antiCombinedMask");      
-        CVHelper.drawMat(antiCombinedMask, imageViewTest1);
-        
-        Mat tmp1=new Mat(combinedMask.rows(), combinedMask.cols(), combinedMask.type()); 
-        Core.multiply(faceMatDest, antiCombinedMask, tmp1);
-        CVHelper.drawMat(tmp1, imageViewTest2);
+
+
+        //CVHelper.drawMat(antiCombinedMask, imageViewTest1);
+
+        Mat tmp1=new Mat(combinedMask.rows(), combinedMask.cols(), combinedMask.type());
+        Core.multiply(faceMatScaled, combinedMask, tmp1);
+        CVHelper.drawMat(tmp1, imageViewTest1);
+
+        Mat tmp2=new Mat(combinedMask.rows(), combinedMask.cols(), combinedMask.type());
+        Core.multiply(faceMatDest, antiCombinedMask, tmp2);
+        CVHelper.drawMat(tmp2, imageViewTest2);
  
-        Mat tmp2=new Mat(combinedMask.rows(), combinedMask.cols(), combinedMask.type());  
-        Core.multiply(faceMatScaled, combinedMask, tmp2);
-        CVHelper.drawMat(tmp2, imageViewTest1);
+
      
         Core.add(tmp1, tmp2, faceMatDest);             
         CVHelper.drawMat(faceMatDest, imageViewTest3);
