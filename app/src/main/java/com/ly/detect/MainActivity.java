@@ -136,7 +136,7 @@ public class MainActivity extends Activity {
 
     private void adjustAngle(){	
 
-        double angleDest=CVHelper.getAngle(imgMatDest,false);
+        double angleDest=CVHelper.getAngle(imgMat,false);
         double angleSrc=CVHelper.getAngle(imgMat,false);
         double angleTotal=angleDest-angleSrc;
         
