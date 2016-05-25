@@ -46,22 +46,27 @@ class FaceppUtil {
 
                 try {
                     //detect
-                    JSONObject faceResult = httpRequests.detectionDetect(new PostParameters().setImg(array));
+                    JSONObject faceResult = httpRequests.detectionDetect(new PostParameters().setImg(array).setAttribute("pose"));
                     JSONArray faceArray = faceResult.getJSONArray("face");
                     if (faceArray.length() == 0) {
                         Log.e(TAG,"result 0");
                         return;
                     }
-                    JSONObject position = faceArray.getJSONObject(0).getJSONObject("position");
-                    JSONObject leftEye=position.getJSONObject("eye_left");
-                    JSONObject rightEye=position.getJSONObject("eye_right");
+//                    JSONObject position = faceArray.getJSONObject(0).getJSONObject("position");
+//                    JSONObject leftEye=position.getJSONObject("eye_left");
+//                    JSONObject rightEye=position.getJSONObject("eye_right");
+//
+//                    double lx=leftEye.getDouble("x");
+//                    double ly=leftEye.getDouble("y");
+//                    double rx=rightEye.getDouble("x");
+//                    double ry=rightEye.getDouble("y");
+//                    double t1=(ry-ly)/(rx-lx);
+//                    double angle=Math.atan(t1)*180/Math.PI;
 
-                    double lx=leftEye.getDouble("x");
-                    double ly=leftEye.getDouble("y");
-                    double rx=rightEye.getDouble("x");
-                    double ry=rightEye.getDouble("y");
-                    double t1=(ry-ly)/(rx-lx);
-                    double angle=Math.atan(t1)*180/Math.PI;
+                    JSONObject attribute = faceArray.getJSONObject(0).getJSONObject("attribute");
+                    JSONObject pose=attribute.getJSONObject("pose");
+                    JSONObject roll_angle=pose.getJSONObject("roll_angle");
+                    double angle=roll_angle.getDouble("value");
                     if (callback != null) {
                         callback.angleResult(angle);
                     }

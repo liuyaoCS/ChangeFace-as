@@ -25,10 +25,12 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore.Images.ImageColumns;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +55,9 @@ public class MainActivity extends Activity {
 
     private MatOfPoint matOfPoints;
     private int srcHeight,srcWidth;
+
+    private ImageView maker;
+    private int lastX,lastY,initX,initY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {  
@@ -116,7 +121,39 @@ public class MainActivity extends Activity {
         imageViewTest3= (ImageView) this.findViewById(R.id.imageViewTest3); 
         
         imageViewTest4= (ImageView) this.findViewById(R.id.imageViewTest4); 
-        imageViewTest5= (ImageView) this.findViewById(R.id.imageViewTest5); 
+        imageViewTest5= (ImageView) this.findViewById(R.id.imageViewTest5);
+
+        maker= (ImageView) this.findViewById(R.id.maker);
+        maker.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                switch (motionEvent.getAction()){
+                    case MotionEvent.ACTION_DOWN:
+                        lastX=(int)motionEvent.getRawX();
+                        lastY=(int)motionEvent.getRawY();
+                        initX=lastX;
+                        initY=lastY;
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        int dx = (int) motionEvent.getRawX() - lastX;
+                        int dy = (int) motionEvent.getRawY() - lastY;
+
+                        int left = view.getLeft() + dx;
+                        int top = view.getTop() + dy;
+                        int right = view.getRight() + dx;
+                        int bottom = view.getBottom() + dy;
+
+                        view.layout(left, top, right, bottom);
+
+                        lastX = (int) motionEvent.getRawX();
+                        lastY = (int) motionEvent.getRawY();
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        break;
+                }
+                return true;
+            }
+        });
     }
     private void prepare(){
     	imgMat = new Mat();  
@@ -232,6 +269,12 @@ public class MainActivity extends Activity {
        
         faceMatDest.copyTo(imgMatDest.submat(faceRectDest));      
         CVHelper.drawMat(imgMatDest, imageViewDest);
+
+        maker.setVisibility(View.INVISIBLE);
+        RelativeLayout.LayoutParams lp= (RelativeLayout.LayoutParams) maker.getLayoutParams();
+        lp.setMargins(0,imageViewDest.getHeight()/2,0,0);
+        maker.setLayoutParams(lp);
+
     }
     
     @Override  

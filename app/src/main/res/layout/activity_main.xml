@@ -30,15 +30,27 @@
         android:layout_weight="1"
         android:scaleType="fitCenter"
         />
-         <ImageView android:id="@+id/imageView_dest"
-        android:layout_width="0dp"
-          android:layout_weight="1"
-        android:layout_height="wrap_content"
-        android:scaleType="fitCenter"
-        />
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+            <ImageView android:id="@+id/imageView_dest"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scaleType="fitCenter"
+                />
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/maker"
+                android:src="@drawable/marker"
+                android:layout_centerHorizontal="true"
+                android:visibility="gone"/>
+        </RelativeLayout>
+
     </LinearLayout>
     <LinearLayout android:layout_width="match_parent"
-        android:layout_height="wrap_content" 
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:weightSum="3"
         android:padding="1dp"
