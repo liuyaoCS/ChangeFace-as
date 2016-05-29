@@ -3,7 +3,11 @@ package com.ly.detect;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
@@ -75,6 +79,34 @@ public class CVHelper {
     		    
     	return ret;	
     }
+	public static Mat getKeyPointMask(Mat im,int type,MatOfPoint points){
+		Mat ret=Mat.zeros(im.rows(), im.cols(), type);
+
+//		MatOfPoint keyPoints=new MatOfPoint();
+//		List<Point> points1=new ArrayList<Point>();
+//		points1.add(new Point(183.0,167.0));
+//		points1.add(new Point(201.0,169.0));
+//		points1.add(new Point(212.0,161.0));
+//		points1.add(new Point(100.000000,10.000000));
+//		points1.add(new Point(20.000000,150.000000));
+//		points1.add(new Point(150.000000,210.000000));
+//		keyPoints.fromList(points1);
+
+		List<Point> sets=points.toList();
+		for(Point p:sets){
+			Log.i("ly","point->"+p.x+","+p.y);
+		}
+
+		Core.fillConvexPoly(im, points, WHITE_COLOR);
+
+		//Core.line(ret,new Point(10,10),new Point(200,200),WHITE_COLOR);
+
+
+		//Imgproc.GaussianBlur(ret, ret, new Size(MASK_BLUR_SIZE,MASK_BLUR_SIZE),0);
+		//ret.convertTo(ret, type, 1/255.0);
+
+		return im;
+	}
 	public static Mat getMask2(Mat im, int type, MatOfPoint matOfPoint){
 		Mat ret=Mat.zeros(im.rows(), im.cols(), type);
 		Core.fillConvexPoly(ret, matOfPoint, WHITE_COLOR);

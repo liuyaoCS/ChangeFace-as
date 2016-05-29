@@ -58,6 +58,7 @@ public class MainActivity extends Activity {
 
     private ImageView maker;
     private int lastX,lastY,initX,initY;
+    private List<Point> points;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {  
@@ -77,6 +78,8 @@ public class MainActivity extends Activity {
                     imgMat=CVHelper.rotateMat(imgMat, angle);
                     CVHelper.drawMat(imgMat, imageViewTest5);
                     change();
+                }else if(message.what==2){
+                    keyPointsTest();
                 }
                 return false;
             }
@@ -183,6 +186,22 @@ public class MainActivity extends Activity {
     }
     private void faceppFetchAngleAndChange(){
         FaceppUtil.detect(img);
+    }
+    private void keyPointsTest(){
+        Rect[] ret=CVHelper.faceDetectFine(imgMat,false);
+        Rect faceRect=ret[0];
+        int dx=faceRect.x;
+        int dy=faceRect.y;
+
+        Mat faceMat =imgMat.submat(faceRect);   //showMatInfo(faceMat, "faceMat0");
+        List<Point> tmp=new ArrayList<Point>();
+        for(Point p:points){
+            tmp.add(new Point(p.x-dx,p.y-dy));
+        }
+        matOfPoints.fromList(tmp);
+
+        Mat faceMask=CVHelper.getKeyPointMask(faceMat,CvType.CV_64FC4,matOfPoints);
+        CVHelper.drawMat(faceMask, imageViewTest4);
     }
     private void change(){
 //    	imgMat = new Mat();  
@@ -332,18 +351,24 @@ public class MainActivity extends Activity {
         @Override
         public void keyPointsResult(List<JSONObject> keyPoints) {
 
-            List<Point> points=new ArrayList<Point>();
+            points = new ArrayList<Point>();
+            Log.i("ly","src->"+srcWidth+","+srcHeight);
             for (JSONObject item:keyPoints){
                 try {
 
                     Point p=new Point(item.getDouble("x")*srcWidth/100,item.getDouble("y")*srcHeight/100);
                     points.add(p);
+                   // Log.i("ly","point->"+p.x+","+p.y);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
-            matOfPoints.fromList(points);
+            //matOfPoints.fromList(points);
+
+            Message message=new Message();
+            message.what=2;
+            handler.sendMessage(message);
         }
     }
 //    static{
