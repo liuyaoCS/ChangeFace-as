@@ -43,9 +43,10 @@ public class MainActivity extends Activity {
   
     private ImageView imageView,imageViewDest;
     private ImageView imageViewTest1,imageViewTest2,imageViewTest3;  
-    private ImageView imageViewTest4,imageViewTest5;  
+    private ImageView imageViewTest4,imageViewTest5,imageViewTest6;
     private Bitmap img,imgDest;      
-    private Button detect,get;
+    private Button detect,get,type;
+    private Boolean isReal=true;
 	
 	private Mat test;
 	private Mat imgMatDest;
@@ -59,6 +60,16 @@ public class MainActivity extends Activity {
     private ImageView maker;
     private int lastX,lastY,initX,initY;
     private List<Point> points;
+
+    //cartoon test
+    int x=280;
+    int y=140;
+    int w=220;
+    int h=240;
+    double ry=106;
+    double ly=120;
+    double rx=142;
+    double lx=67;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {  
@@ -77,9 +88,44 @@ public class MainActivity extends Activity {
                     double angle=data.getDouble("angle");
                     imgMat=CVHelper.rotateMat(imgMat, angle);
                     CVHelper.drawMat(imgMat, imageViewTest5);
-                    change();
+
+
+                    if(isReal){
+                        change();
+                    }else{
+                        double t1=(ry-ly)/(rx-lx);
+                        double dest_angle=Math.atan(t1)*180/Math.PI;
+                        imgMatDest=CVHelper.rotateMat(imgMatDest, dest_angle);
+                        CVHelper.drawMat(imgMatDest, imageViewTest4);
+
+                        changeCartoon();
+                        CVHelper.drawMat(imgMatDest, imageViewTest5);
+
+                        imgMatDest=CVHelper.rotateMat(imgMatDest, -1*dest_angle);
+                        CVHelper.drawMat(imgMatDest, imageViewTest6);
+
+
+                        Bitmap imgBg=BitmapFactory.decodeResource(getResources(),R.drawable.cartoon_face_bg);
+                        Mat imgMatBg = new Mat();
+                        Utils.bitmapToMat(imgBg, imgMatBg);
+                        Rect rect=new Rect(x,y,w,h);
+                        Log.i("ly","imgMatDest x,y->"+imgMatDest.cols()+","+imgMatDest.rows());
+                        Log.i("ly","w,h ->"+w+","+h);
+
+
+                        Mat copy=imgMatDest.clone();
+                        Mat grey=new Mat();
+                        copy.convertTo(grey,CvType.CV_8U);
+
+
+                        imgMatDest.copyTo(imgMatBg.submat(rect),grey);
+                        Imgproc.medianBlur(imgMatBg,imgMatBg,5);
+
+                        CVHelper.drawMat(imgMatBg, imageViewDest);
+                    }
+
                 }else if(message.what==2){
-                    keyPointsTest();
+                    //keyPointsTest();
                 }
                 return false;
             }
@@ -98,7 +144,21 @@ public class MainActivity extends Activity {
             }  
         });  
   
-  
+        type= (Button) this.findViewById(R.id.type);
+        type.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(isReal){
+                    type.setText("cartoon");
+                    isReal=false;
+                }else{
+                    type.setText("real");
+                    isReal=true;
+                }
+            }
+        });
+
+
         detect = (Button) this.findViewById(R.id.detect);  
         detect.setVisibility(View.INVISIBLE);  
         detect.setOnClickListener(new OnClickListener() {  
@@ -107,7 +167,7 @@ public class MainActivity extends Activity {
 
                 //test();
 
-                faceppFetchAngleAndChange();
+                faceppDetect();
 
                 //adjustAngle();
             	//change();
@@ -125,38 +185,41 @@ public class MainActivity extends Activity {
         
         imageViewTest4= (ImageView) this.findViewById(R.id.imageViewTest4); 
         imageViewTest5= (ImageView) this.findViewById(R.id.imageViewTest5);
+        imageViewTest6= (ImageView) this.findViewById(R.id.imageViewTest6);
 
-        maker= (ImageView) this.findViewById(R.id.maker);
-        maker.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                switch (motionEvent.getAction()){
-                    case MotionEvent.ACTION_DOWN:
-                        lastX=(int)motionEvent.getRawX();
-                        lastY=(int)motionEvent.getRawY();
-                        initX=lastX;
-                        initY=lastY;
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        int dx = (int) motionEvent.getRawX() - lastX;
-                        int dy = (int) motionEvent.getRawY() - lastY;
+//        maker= (ImageView) this.findViewById(R.id.maker);
+//        maker.setOnTouchListener(new View.OnTouchListener() {
+//            @Override
+//            public boolean onTouch(View view, MotionEvent motionEvent) {
+//                switch (motionEvent.getAction()){
+//                    case MotionEvent.ACTION_DOWN:
+//                        lastX=(int)motionEvent.getRawX();
+//                        lastY=(int)motionEvent.getRawY();
+//                        initX=lastX;
+//                        initY=lastY;
+//                        break;
+//                    case MotionEvent.ACTION_MOVE:
+//                        int dx = (int) motionEvent.getRawX() - lastX;
+//                        int dy = (int) motionEvent.getRawY() - lastY;
+//
+//                        int left = view.getLeft() + dx;
+//                        int top = view.getTop() + dy;
+//                        int right = view.getRight() + dx;
+//                        int bottom = view.getBottom() + dy;
+//
+//                        view.layout(left, top, right, bottom);
+//
+//                        lastX = (int) motionEvent.getRawX();
+//                        lastY = (int) motionEvent.getRawY();
+//                        break;
+//                    case MotionEvent.ACTION_UP:
+//                        break;
+//                }
+//                return true;
+//            }
+//        });
 
-                        int left = view.getLeft() + dx;
-                        int top = view.getTop() + dy;
-                        int right = view.getRight() + dx;
-                        int bottom = view.getBottom() + dy;
 
-                        view.layout(left, top, right, bottom);
-
-                        lastX = (int) motionEvent.getRawX();
-                        lastY = (int) motionEvent.getRawY();
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        break;
-                }
-                return true;
-            }
-        });
     }
     private void prepare(){
     	imgMat = new Mat();  
@@ -184,7 +247,7 @@ public class MainActivity extends Activity {
         imgMat=CVHelper.rotateMat(imgMat, angleTotal);
         CVHelper.drawMat(imgMat, imageViewTest5);       
     }
-    private void faceppFetchAngleAndChange(){
+    private void faceppDetect(){
         FaceppUtil.detect(img);
     }
     private void keyPointsTest(){
@@ -196,13 +259,97 @@ public class MainActivity extends Activity {
         Mat faceMat =imgMat.submat(faceRect);   //showMatInfo(faceMat, "faceMat0");
         List<Point> tmp=new ArrayList<Point>();
         for(Point p:points){
-           // tmp.add(new Point(p.x-dx,p.y-dy));
-            tmp.add(p);
+           tmp.add(new Point(p.x-dx,p.y-dy));
+           // tmp.add(p);
         }
         matOfPoints.fromList(tmp);
 
-        Mat faceMask=CVHelper.getKeyPointMask(imgMat,CvType.CV_64FC4,matOfPoints);
+        Mat faceMask=CVHelper.getKeyPointMask(faceMat,CvType.CV_64FC4,matOfPoints);
         CVHelper.drawMat(faceMask, imageViewTest4);
+    }
+    private void changeCartoon(){
+        Rect[] ret=CVHelper.faceDetectFine(imgMat,false);
+        Rect faceRect=ret[0];
+        Rect eyeRect = ret[1];
+        Rect noseRect = ret[2];
+        Rect mouseRect = ret[3];
+        Mat faceMat =imgMat.submat(faceRect);   //showMatInfo(faceMat, "faceMat0");
+
+//        imgMatDest = new Mat();
+//        Utils.bitmapToMat(imgDest, imgMatDest);
+//        Rect[] retDest=CVHelper.faceDetectFine(imgMatDest,false);
+        Rect faceRectDest=new Rect(0,0,imgMatDest.cols(),imgMatDest.rows());//new Rect(y,y+h,x,x+w);//
+        Rect eyeRectDest = new Rect(0,0,0,0);
+        Rect noseRectDest = new Rect(0,0,0,0);
+        Rect mouseRectDest = new Rect(0,0,0,0);
+        Mat faceMatDest=imgMatDest.submat(faceRectDest);
+
+        //get mask
+        Mat faceMask=CVHelper.getMask(faceMat,CvType.CV_64FC4,eyeRect,noseRect,mouseRect); //showMatInfo(faceMat, "faceMat1");showMatInfo(faceMask, "faceMask");
+        Mat faceMaskScaled=CVHelper.scaledMat(faceMask, faceRectDest, CvType.CV_64FC4);
+        Mat faceMaskDest=CVHelper.getMask(faceMatDest,CvType.CV_64FC4,eyeRectDest,noseRectDest,mouseRectDest);
+
+        Core.max(faceMaskScaled, faceMaskDest, faceMaskScaled);
+
+
+        //correct color
+        int blur_amount=(int) (faceRect.width*CVHelper.COLOUR_CORRECT_BLUR_FRAC);
+        if(blur_amount%2==0){
+            blur_amount+=1;
+        }
+        Log.i(TAG, "blur_amount->"+blur_amount);
+
+        Mat faceMatScaled=CVHelper.scaledMat(faceMat,  faceRectDest,CvType.CV_64FC4); //showMatInfo(faceMatScaled, "faceMatScaled");
+        faceMatDest.convertTo(faceMatDest, CvType.CV_64FC4);
+
+        Mat im1_blur=new Mat();
+        Mat im2_blur=new Mat();
+        Imgproc.GaussianBlur(faceMatScaled, im2_blur, new Size(blur_amount,blur_amount), 0); //showMatInfo(faceMatScaled, "faceMatScaled");
+        Imgproc.GaussianBlur(faceMatDest, im1_blur, new Size(blur_amount,blur_amount), 0); //showMatInfo(im1_blur, "im1_blur");
+
+
+        Mat tmp=new Mat(im2_blur.rows(), im2_blur.cols(), im2_blur.type());       //showMatInfo(tmp, "tmp");
+        Mat ones=Mat.ones(im2_blur.rows(), im2_blur.cols(), im2_blur.type());      // showMatInfo(ones, "ones");
+        Core.compare(im2_blur, ones, tmp, Core.CMP_LE);                 CVHelper.showMatInfo(tmp, "tmp");
+        tmp.convertTo(tmp, tmp.type(), 128);                     //CVHelper.showData(tmp, "tmp");   // showMatInfo(im2_blur, "im2_blur");
+        tmp.assignTo(tmp, im2_blur.type());                      //CVHelper.showData(tmp, "tmp2");    // showMatInfo(tmp, "tmp");
+        Core.add(im2_blur, tmp, im2_blur);
+
+        Core.multiply(faceMatScaled,im1_blur ,im1_blur);
+        Core.divide(im1_blur, im2_blur, faceMatScaled);
+
+        CVHelper.drawMat(imgMat, imageView);
+
+        //change face
+        Mat combinedMask=faceMaskScaled;               //showData(combinedMask, "combinedMask");
+
+        Mat onesMat=Mat.ones(combinedMask.rows(), combinedMask.cols(), combinedMask.type());
+        onesMat.setTo(new Scalar(1.0, 1.0, 1.0, 1.0));
+        Mat antiCombinedMask=new Mat(combinedMask.rows(), combinedMask.cols(), combinedMask.type());
+        Core.subtract(onesMat, combinedMask, antiCombinedMask);	  //showData(antiCombinedMask, "antiCombinedMask");
+
+
+        //CVHelper.drawMat(antiCombinedMask, imageViewTest1);
+
+        Mat tmp1=new Mat(combinedMask.rows(), combinedMask.cols(), combinedMask.type());
+        Core.multiply(faceMatScaled, combinedMask, tmp1);
+        CVHelper.drawMat(tmp1, imageViewTest1);
+
+        Mat tmp2=new Mat(combinedMask.rows(), combinedMask.cols(), combinedMask.type());
+        Core.multiply(faceMatDest, antiCombinedMask, tmp2);
+        CVHelper.drawMat(tmp2, imageViewTest2);
+
+
+
+        Core.add(tmp1, tmp2, faceMatDest);
+        CVHelper.drawMat(faceMatDest, imageViewTest3);
+
+        faceMatDest.assignTo(faceMatDest, CvType.CV_8UC4);
+        //Imgproc.GaussianBlur( faceMatDest,  faceMatDest, new Size(CVHelper.WHOLE_BLUR_SIZE,CVHelper.WHOLE_BLUR_SIZE), 0);
+//        Imgproc.medianBlur(faceMatDest, faceMatDest,  CVHelper.WHOLE_BLUR_SIZE); //CVHelper.showMatInfo(faceMatDest, "faceMatDest");
+
+        faceMatDest.copyTo(imgMatDest.submat(faceRectDest));
+        CVHelper.drawMat(imgMatDest, imageViewDest);
     }
     private void change(){
 //    	imgMat = new Mat();  
@@ -284,16 +431,16 @@ public class MainActivity extends Activity {
         CVHelper.drawMat(faceMatDest, imageViewTest3);
        
         faceMatDest.assignTo(faceMatDest, CvType.CV_8UC4);
-        Imgproc.GaussianBlur( faceMatDest,  faceMatDest, new Size(CVHelper.WHOLE_BLUR_SIZE,CVHelper.WHOLE_BLUR_SIZE), 0); 
+        Imgproc.GaussianBlur( faceMatDest,  faceMatDest, new Size(CVHelper.WHOLE_BLUR_SIZE,CVHelper.WHOLE_BLUR_SIZE), 0);
 //        Imgproc.medianBlur(faceMatDest, faceMatDest,  CVHelper.WHOLE_BLUR_SIZE); //CVHelper.showMatInfo(faceMatDest, "faceMatDest");
        
         faceMatDest.copyTo(imgMatDest.submat(faceRectDest));      
         CVHelper.drawMat(imgMatDest, imageViewDest);
 
-        maker.setVisibility(View.INVISIBLE);
-        RelativeLayout.LayoutParams lp= (RelativeLayout.LayoutParams) maker.getLayoutParams();
-        lp.setMargins(0,imageViewDest.getHeight()/2,0,0);
-        maker.setLayoutParams(lp);
+//        maker.setVisibility(View.INVISIBLE);
+//        RelativeLayout.LayoutParams lp= (RelativeLayout.LayoutParams) maker.getLayoutParams();
+//        lp.setMargins(0,imageViewDest.getHeight()/2,0,0);
+//        maker.setLayoutParams(lp);
 
     }
     
@@ -324,7 +471,7 @@ public class MainActivity extends Activity {
                 img = BitmapFactory.decodeFile(fileSrc, options);  
                 imageView.setImageBitmap(img);   
   
-                imgDest=BitmapFactory.decodeResource(getResources(), R.drawable.star);
+                imgDest=BitmapFactory.decodeResource(getResources(), isReal?R.drawable.star:R.drawable.cartoon_face);
                 imageViewDest.setImageBitmap(imgDest);  
                 
                 detect.setVisibility(View.VISIBLE);  

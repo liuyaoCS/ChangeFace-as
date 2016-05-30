@@ -96,6 +96,16 @@ class FaceppUtil {
                         Log.e(TAG,"result 0");
                         return;
                     }
+//                    JSONObject position = faceArray.getJSONObject(0).getJSONObject("position");
+//                    JSONObject leftEye=position.getJSONObject("eye_left");
+//                    JSONObject rightEye=position.getJSONObject("eye_right");
+//
+//                    double lx=leftEye.getDouble("x");
+//                    double ly=leftEye.getDouble("y");
+//                    double rx=rightEye.getDouble("x");
+//                    double ry=rightEye.getDouble("y");
+//                    double t1=(ry-ly)/(rx-lx);
+//                    double angle=Math.atan(t1)*180/Math.PI;
 
                     JSONObject attribute = faceArray.getJSONObject(0).getJSONObject("attribute");
                     JSONObject pose=attribute.getJSONObject("pose");
