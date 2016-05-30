@@ -82,16 +82,6 @@ public class CVHelper {
 	public static Mat getKeyPointMask(Mat im,int type,MatOfPoint points){
 		Mat ret=Mat.zeros(im.rows(), im.cols(), type);
 
-//		MatOfPoint keyPoints=new MatOfPoint();
-//		List<Point> points1=new ArrayList<Point>();
-//		points1.add(new Point(183.0,167.0));
-//		points1.add(new Point(201.0,169.0));
-//		points1.add(new Point(212.0,161.0));
-//		points1.add(new Point(100.000000,10.000000));
-//		points1.add(new Point(20.000000,150.000000));
-//		points1.add(new Point(150.000000,210.000000));
-//		keyPoints.fromList(points1);
-
 		List<Point> sets=points.toList();
 		for(Point p:sets){
 			Log.i("ly","point->"+p.x+","+p.y);

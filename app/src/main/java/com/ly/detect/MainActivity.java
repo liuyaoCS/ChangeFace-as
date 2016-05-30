@@ -196,11 +196,12 @@ public class MainActivity extends Activity {
         Mat faceMat =imgMat.submat(faceRect);   //showMatInfo(faceMat, "faceMat0");
         List<Point> tmp=new ArrayList<Point>();
         for(Point p:points){
-            tmp.add(new Point(p.x-dx,p.y-dy));
+           // tmp.add(new Point(p.x-dx,p.y-dy));
+            tmp.add(p);
         }
         matOfPoints.fromList(tmp);
 
-        Mat faceMask=CVHelper.getKeyPointMask(faceMat,CvType.CV_64FC4,matOfPoints);
+        Mat faceMask=CVHelper.getKeyPointMask(imgMat,CvType.CV_64FC4,matOfPoints);
         CVHelper.drawMat(faceMask, imageViewTest4);
     }
     private void change(){
