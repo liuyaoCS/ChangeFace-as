@@ -25,12 +25,11 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore.Images.ImageColumns;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,8 +44,11 @@ public class MainActivity extends Activity {
     private ImageView imageViewTest1,imageViewTest2,imageViewTest3;  
     private ImageView imageViewTest4,imageViewTest5,imageViewTest6;
     private Bitmap img,imgDest;      
-    private Button detect,get,type;
+    private Button detect,get, typeBtn;
     private Boolean isReal=true;
+    private int type=0; //0:real 1:cartoon 2:hair
+    private String[] typeStrs=new String[]{"real","cartoon","hair"};
+    private int[] typeRes=new int[]{R.drawable.star,R.drawable.cartoon_face,R.drawable.hair};
 	
 	private Mat test;
 	private Mat imgMatDest;
@@ -71,6 +73,14 @@ public class MainActivity extends Activity {
     double rx=142;
     double lx=67;
 
+    //hair test
+    int hair_face_x=60;
+    int hair_face_y=80;
+    int hair_face_w=220;
+    int hair_face_h=240;
+    int hair_w;
+    int hair_h;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {  
         super.onCreate(savedInstanceState);  
@@ -90,9 +100,9 @@ public class MainActivity extends Activity {
                     CVHelper.drawMat(imgMat, imageViewTest5);
 
 
-                    if(isReal){
+                    if(type==0){
                         change();
-                    }else{
+                    }else if(type==1){
                         double t1=(ry-ly)/(rx-lx);
                         double dest_angle=Math.atan(t1)*180/Math.PI;
                         imgMatDest=CVHelper.rotateMat(imgMatDest, dest_angle);
@@ -122,6 +132,11 @@ public class MainActivity extends Activity {
                         Imgproc.medianBlur(imgMatBg,imgMatBg,5);
 
                         CVHelper.drawMat(imgMatBg, imageViewDest);
+                    }else{
+                        hair_w=imgMatDest.cols();
+                        hair_h=imgMatDest.rows();
+                        //Toast.makeText(MainActivity.this,"hair_w->"+hair_w,Toast.LENGTH_LONG).show();
+                        addHair();
                     }
 
                 }else if(message.what==2){
@@ -144,17 +159,19 @@ public class MainActivity extends Activity {
             }  
         });  
   
-        type= (Button) this.findViewById(R.id.type);
-        type.setOnClickListener(new OnClickListener() {
+        typeBtn = (Button) this.findViewById(R.id.type);
+        typeBtn.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(isReal){
-                    type.setText("cartoon");
-                    isReal=false;
-                }else{
-                    type.setText("real");
-                    isReal=true;
-                }
+//                if(type==0){
+//                    typeBtn.setText("cartoon");
+//                    type=1;
+//                }else{
+//                    typeBtn.setText("real");
+//                    isReal=true;
+//                }
+                type=(type+1)%3;
+                typeBtn.setText(typeStrs[type]);
             }
         });
 
@@ -266,6 +283,31 @@ public class MainActivity extends Activity {
 
         Mat faceMask=CVHelper.getKeyPointMask(faceMat,CvType.CV_64FC4,matOfPoints);
         CVHelper.drawMat(faceMask, imageViewTest4);
+    }
+    private void addHair(){
+        Rect[] ret=CVHelper.faceDetectFine(imgMat,false);
+        Rect faceRect=ret[0];
+
+        double w_scale=(double)faceRect.width/hair_face_w;
+        double h_scale=(double)faceRect.height/hair_face_h;
+        Rect hairRectScaled=new Rect(0,0,(int)(w_scale*hair_w),(int)(h_scale*hair_h));
+        Mat hairMatScaled=CVHelper.scaledMat(imgMatDest, hairRectScaled, CvType.CV_64FC4);
+        hairMatScaled.assignTo(hairMatScaled, CvType.CV_8UC4);
+        Mat copy=hairMatScaled.clone();
+        Mat grey=new Mat();
+        copy.convertTo(grey,CvType.CV_8U);
+
+        hair_face_x=(int)(hair_face_x*w_scale);
+        hair_face_y=(int)(hair_face_y*h_scale);
+        int hair_x_in_src=faceRect.x-hair_face_x;
+        int hair_y_in_src=faceRect.y-hair_face_y;
+        Rect hair_rect_in_src=new Rect(hair_x_in_src,hair_y_in_src,hairRectScaled.width,hairRectScaled.height);
+
+        CVHelper.drawMat(hairMatScaled,imageViewTest1);
+        CVHelper.drawMat(imgMat.submat(hair_rect_in_src),imageViewTest2);
+
+        hairMatScaled.copyTo(imgMat.submat(hair_rect_in_src),grey);
+        CVHelper.drawMat(imgMat, imageViewDest);
     }
     private void changeCartoon(){
         Rect[] ret=CVHelper.faceDetectFine(imgMat,false);
@@ -471,7 +513,7 @@ public class MainActivity extends Activity {
                 img = BitmapFactory.decodeFile(fileSrc, options);  
                 imageView.setImageBitmap(img);   
   
-                imgDest=BitmapFactory.decodeResource(getResources(), isReal?R.drawable.star:R.drawable.cartoon_face);
+                imgDest=BitmapFactory.decodeResource(getResources(), typeRes[type]);
                 imageViewDest.setImageBitmap(imgDest);  
                 
                 detect.setVisibility(View.VISIBLE);  
