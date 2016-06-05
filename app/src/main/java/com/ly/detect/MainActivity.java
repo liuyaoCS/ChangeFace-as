@@ -96,6 +96,7 @@ public class MainActivity extends Activity {
                 if(message.what==1){
                     Bundle data=message.getData();
                     double angle=data.getDouble("angle");
+                    Mat imgMatSaved=imgMat.clone();
                     imgMat=CVHelper.rotateMat(imgMat, angle);
                     CVHelper.drawMat(imgMat, imageViewTest5);
 
@@ -135,8 +136,22 @@ public class MainActivity extends Activity {
                     }else{
                         hair_w=imgMatDest.cols();
                         hair_h=imgMatDest.rows();
+
                         //Toast.makeText(MainActivity.this,"hair_w->"+hair_w,Toast.LENGTH_LONG).show();
                         addHair();
+
+                        imgMat=CVHelper.rotateMat(imgMat, -1*angle);
+                        CVHelper.drawMat(imgMat, imageViewTest4);
+
+                        Mat copy1=imgMat.clone();
+                        Mat grey1=new Mat();
+                        copy1.convertTo(grey1,CvType.CV_8U);
+
+                        imgMat.copyTo(imgMatSaved,grey1);
+                        Imgproc.medianBlur(imgMatSaved,imgMatSaved,5);
+
+                        CVHelper.drawMat(imgMatSaved, imageViewDest);
+
                     }
 
                 }else if(message.what==2){
@@ -307,7 +322,7 @@ public class MainActivity extends Activity {
         CVHelper.drawMat(imgMat.submat(hair_rect_in_src),imageViewTest2);
 
         hairMatScaled.copyTo(imgMat.submat(hair_rect_in_src),grey);
-        CVHelper.drawMat(imgMat, imageViewDest);
+        CVHelper.drawMat(imgMat, imageViewTest3);
     }
     private void changeCartoon(){
         Rect[] ret=CVHelper.faceDetectFine(imgMat,false);

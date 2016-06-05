@@ -72,7 +72,13 @@ public class CVHelper {
     	//Core.fillConvexPoly(ret, points, EYE_RECT_COLOR);
     	Core.rectangle(ret, eyeRect.tl(), eyeRect.br(), WHITE_COLOR,CV_FILLED);//CV_FILLED
     	Core.rectangle(ret, noseRect.tl(), noseRect.br(), WHITE_COLOR,CV_FILLED);//CV_FILLED   
-    	Core.rectangle(ret, mouseRect.tl(), mouseRect.br(), WHITE_COLOR,CV_FILLED);//CV_FILLED   
+    	Core.rectangle(ret, mouseRect.tl(), mouseRect.br(), WHITE_COLOR,CV_FILLED);//CV_FILLED
+
+		int gap_x=noseRect.x;
+		int gap_y=(int)eyeRect.br().y;
+		int gap_w=noseRect.width;
+		int gap_h=(int)noseRect.tl().y-gap_y;
+		Core.rectangle(ret, new Point(gap_x,gap_y), new Point(gap_x+gap_w,gap_y+gap_h), WHITE_COLOR,CV_FILLED);//CV_FILLED
  
     	Imgproc.GaussianBlur(ret, ret, new Size(MASK_BLUR_SIZE,MASK_BLUR_SIZE),0);
     	ret.convertTo(ret, type, 1/255.0);
